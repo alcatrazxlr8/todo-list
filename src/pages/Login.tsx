@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
 	signInWithGoogle,
 	// logOut,
-} from "E:/Learn/React/todo-list/authService.ts";
+} from "../../AuthService";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 

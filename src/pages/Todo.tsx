@@ -1,5 +1,5 @@
 import { useAuth } from "../context/AuthContext";
-import { logOut } from "E:/Learn/React/todo-list/authService.ts";
+import { logOut } from "../../AuthService";
 import { useNavigate } from "react-router-dom";
 
 const Todo = () => {
