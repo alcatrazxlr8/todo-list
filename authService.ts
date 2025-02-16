@@ -1,5 +1,6 @@
 import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
-import { auth } from "./src/FirebaseConfig.ts";
+// import { auth } from "./src/FirebaseConfig";
+import { auth } from "E:/Learn/React/todo-list/src/FirebaseConfig";
 
 // Sign in with Google
 export const signInWithGoogle = async () => {
