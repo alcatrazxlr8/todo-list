@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-	signInWithGoogle,
-	// logOut,
-} from "../../AuthService";
+import { signInWithGoogle } from "../../AuthService";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
