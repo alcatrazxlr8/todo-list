@@ -1,134 +1,230 @@
-import React, { useEffect, useState } from 'react';
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import React, { useState, useEffect } from 'react';
+import {
+	collection,
+	query,
+	orderBy,
+	getDocs,
+	addDoc,
+	deleteDoc,
+	doc,
+	updateDoc,
+	writeBatch
+} from "firebase/firestore";
 import { db } from "../FirebaseConfig";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext"; // If you're using an AuthContext
+
+type Task = {
+	id: string;
+	text: string;
+	index: number;
+};
 
 const TodoList = () => {
-	const { user, loading } = useAuth();  // Get current user + loading state from AuthContext
-	const [tasks, setTasks] = useState<string[]>([]);
+	const [tasks, setTasks] = useState<Task[]>([]);
 	const [newTask, setNewTask] = useState('');
-	const [error, setError] = useState("");
+	const [loading, setLoading] = useState(true);
+	const { user, loading: userLoading } = useAuth();
+	// userLoading is the auth loading state; user is the logged-in user
 
-	// We'll only create/use a docRef if user is logged in
-	const docRef = user ? doc(db, "todoLists", user.uid) : null;
-
-	// 1. Load user-specific tasks from Firestore on mount (or when `user` changes)
+	// 1. On mount (and whenever user changes), fetch tasks from sub-collection
 	useEffect(() => {
-		// If still loading or user is not logged in, do nothing
-		if (loading || !user) return;
+		if (userLoading) return;            // Wait for auth to finish
+		if (!user) {
+			setTasks([]);                    // If no user, reset tasks
+			setLoading(false);
+			return;
+		}
 
-		const fetchData = async () => {
+		const fetchTasks = async () => {
+			setLoading(true);
 			try {
-				const docSnap = await getDoc(docRef!); // docRef is never null if user is defined
-				if (docSnap.exists()) {
-					// If the doc exists, load tasks from Firestore
+				// Sub-collection path: /users/{uid}/tasks
+				const tasksCollection = collection(db, "users", user.uid, "tasks");
+				const q = query(tasksCollection, orderBy("index", "asc"));
+				const querySnapshot = await getDocs(q);
+
+				const fetched: Task[] = [];
+				querySnapshot.forEach((docSnap) => {
 					const data = docSnap.data();
-					if (data.tasks) {
-						setTasks(data.tasks);
-					}
-				} else {
-					// If no doc exists for this user, create one with your default tasks
-					await setDoc(docRef!, { tasks });
-				}
+					fetched.push({
+						id: docSnap.id,
+						text: data.text,
+						index: data.index,
+					});
+				});
+
+				setTasks(fetched);
 			} catch (error) {
-				console.error("Error loading tasks from Firestore:", error);
-				setError("Failed to load tasks");
+				console.error("Error fetching tasks:", error);
+			} finally {
+				setLoading(false);
 			}
 		};
 
-		fetchData();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [user, loading]);
+		fetchTasks();
+	}, [user, userLoading]);
 
-	// Whenever we update tasks in local state, also sync them to Firestore
-	const syncTasksToFirestore = async (updatedTasks: string[]) => {
-		if (!docRef) return; // If user is null, skip
+	// 2. When we add a new task, create a new doc with the next available index
+	const addTask = async () => {
+		if (!user) return;
+		if (newTask.trim() === "") return;
+
+		// index = tasks.length (put this new item at bottom)
+		const newIndex = tasks.length;
+
 		try {
-			await setDoc(docRef, { tasks: updatedTasks });
-		} catch (err) {
-			console.error("Error updating tasks in Firestore:", err);
-			setError("Failed to update tasks");
+			const tasksCollection = collection(db, "users", user.uid, "tasks");
+			await addDoc(tasksCollection, {
+				text: newTask,
+				index: newIndex,
+			});
+
+			// Option A: Refetch tasks from Firestore
+			// Option B: Add to local state optimistically
+			// For demonstration, let's do a refetch so the order is guaranteed correct:
+			refetchTasks();
+
+			setNewTask("");
+		} catch (error) {
+			console.error("Error adding task:", error);
 		}
 	};
 
-	function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
-		setNewTask(event.target.value);
-	}
+	// 3. Delete a task doc
+	const deleteTask = async (taskId: string) => {
+		if (!user) return;
 
-	function addTask() {
-		if (newTask.trim() !== "") {
-			const updatedTasks = [...tasks, newTask];
-			setTasks(updatedTasks);
-			setNewTask('');
-			// Sync with Firestore
-			syncTasksToFirestore(updatedTasks);
+		try {
+			const taskDocRef = doc(db, "users", user.uid, "tasks", taskId);
+			await deleteDoc(taskDocRef);
+			refetchTasks(); // or update local state
+		} catch (error) {
+			console.error("Error deleting task:", error);
 		}
-	}
+	};
 
-	function deleteTask(index: number) {
-		const updatedTasks = tasks.filter((_, i) => i !== index);
-		setTasks(updatedTasks);
-		syncTasksToFirestore(updatedTasks);
-	}
+	// 4. Move task up
+	const moveTaskUp = (index: number) => {
+		if (index === 0) return; // already at top
+		const newIndex = index - 1;
+		reorderTasks(index, newIndex);
+	};
 
-	function moveTaskUp(index: number) {
-		if (index > 0) {
-			const updatedTasks = [...tasks];
-			[updatedTasks[index], updatedTasks[index - 1]] = [updatedTasks[index - 1], updatedTasks[index]];
-			setTasks(updatedTasks);
-			syncTasksToFirestore(updatedTasks);
+	// 5. Move task down
+	const moveTaskDown = (index: number) => {
+		if (index === tasks.length - 1) return; // at bottom
+		const newIndex = index + 1;
+		reorderTasks(index, newIndex);
+	};
+
+	// 6. Reorder tasks in local state and Firestore
+	const reorderTasks = async (oldIndex: number, newIndex: number) => {
+		if (!user) return;
+
+		// 6.1 - Reorder in local state
+		// - We'll update tasks array in memory
+		const updated = [...tasks];
+		// find the item with the oldIndex
+		const item = updated.find((t) => t.index === oldIndex);
+		if (!item) return; // safety
+
+		// find the item that currently has newIndex
+		const swappedItem = updated.find((t) => t.index === newIndex);
+		if (!swappedItem) return;
+
+		// swap the index fields
+		const oldIndexVal = item.index;
+		item.index = swappedItem.index;
+		swappedItem.index = oldIndexVal;
+
+		// reorder the array by the index after swap
+		updated.sort((a, b) => a.index - b.index);
+		setTasks(updated);
+
+		// 6.2 - Update Firestore
+		// We'll do a batch update of the two docs whose index changed
+		try {
+			const batch = writeBatch(db);
+
+			const itemDocRef = doc(db, "users", user.uid, "tasks", item.id);
+			batch.update(itemDocRef, { index: item.index });
+
+			const swappedItemDocRef = doc(db, "users", user.uid, "tasks", swappedItem.id);
+			batch.update(swappedItemDocRef, { index: swappedItem.index });
+
+			await batch.commit();
+		} catch (error) {
+			console.error("Error reordering tasks in Firestore:", error);
 		}
+	};
+
+	// Utility function to re-fetch tasks from Firestore
+	const refetchTasks = async () => {
+		if (!user) return;
+		const tasksCollection = collection(db, "users", user.uid, "tasks");
+		const q = query(tasksCollection, orderBy("index", "asc"));
+		const querySnapshot = await getDocs(q);
+
+		const fetched: Task[] = [];
+		querySnapshot.forEach((docSnap) => {
+			const data = docSnap.data();
+			fetched.push({
+				id: docSnap.id,
+				text: data.text,
+				index: data.index,
+			});
+		});
+		setTasks(fetched);
+	};
+
+	// 7. UI
+	if (userLoading || loading) {
+		return <p>Loading tasks...</p>;
 	}
 
-	function moveTaskDown(index: number) {
-		if (index < tasks.length - 1) {
-			const updatedTasks = [...tasks];
-			[updatedTasks[index], updatedTasks[index + 1]] = [updatedTasks[index + 1], updatedTasks[index]];
-			setTasks(updatedTasks);
-			syncTasksToFirestore(updatedTasks);
-		}
+	if (!user) {
+		return <p>Please log in to see your tasks.</p>;
 	}
-
-	// If we're still loading auth or user is not logged in, show a fallback
-	if (loading) return <p>Loading user...</p>;
-	if (!user) return <p>Please log in to view your tasks.</p>;
 
 	return (
 		<div className='todo-list'>
 			<h1>Todo List</h1>
-			{error && <p style={{ color: 'red' }}>{error}</p>}
-
 			<div>
 				<input
 					type="text"
 					placeholder='Enter Task Item'
 					value={newTask}
-					onChange={handleInputChange}
+					onChange={(e) => setNewTask(e.target.value)}
 				/>
 				<button className="add-button" onClick={addTask}>Add</button>
 			</div>
-
 			<ul className="list-group">
-				{tasks.map((task, index) => (
-					<li className='list-group-item' key={index}>
-						<span className='text'>{task}</span>
+				{tasks.map((task) => (
+					<li className='list-group-item' key={task.id}>
+						<span className='text'>{task.text}</span>
+
+						{/* 
+              Move Up/Down buttons rely on 'task.index'. 
+              For example, if task.index=0 => disable 'Up' 
+              If task.index=tasks.length-1 => disable 'Down' 
+            */}
 						<button
-							disabled={index === 0}
+							disabled={task.index === 0}
 							className="btn btn-info move-button"
-							onClick={() => moveTaskUp(index)}
+							onClick={() => moveTaskUp(task.index)}
 						>
 							Up
 						</button>
 						<button
-							disabled={index === tasks.length - 1}
+							disabled={task.index === tasks.length - 1}
 							className="btn btn-info move-button"
-							onClick={() => moveTaskDown(index)}
+							onClick={() => moveTaskDown(task.index)}
 						>
 							Down
 						</button>
 						<button
 							className="btn btn-warning delete-button"
-							onClick={() => deleteTask(index)}
+							onClick={() => deleteTask(task.id)}
 						>
 							Delete
 						</button>

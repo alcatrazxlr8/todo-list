@@ -2,7 +2,7 @@ import { useAuth } from "../context/AuthContext";
 import { logOut } from "../../AuthService";
 import { useNavigate } from "react-router-dom";
 import TodoList from "../components/TodoList";
-import Todos from "../components/Todos";
+// import Todos from "../components/Todos";
 
 const Todo = () => {
 	const { user } = useAuth();
