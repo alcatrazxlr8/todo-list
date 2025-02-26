@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 
 const TodoList = () => {
 	const { user, loading } = useAuth();  // Get current user + loading state from AuthContext
-	const [tasks, setTasks] = useState<string[]>(["Wake Up", "Shower", "Breakfast"]);
+	const [tasks, setTasks] = useState<string[]>([]);
 	const [newTask, setNewTask] = useState('');
 	const [error, setError] = useState("");
 
