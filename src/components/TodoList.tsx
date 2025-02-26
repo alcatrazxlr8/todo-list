@@ -1,94 +1,103 @@
 import React, { useEffect, useState } from 'react';
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../FirebaseConfig";
+import { useAuth } from "../context/AuthContext";
 
 const TodoList = () => {
-	// Local state still used for rendering and user interactions
-	const [tasks, setTasks] = useState<string[]>([]);
-	const [newTask, setnewTask] = useState('');
+	const { user, loading } = useAuth();  // Get current user + loading state from AuthContext
+	const [tasks, setTasks] = useState<string[]>(["Wake Up", "Shower", "Breakfast"]);
+	const [newTask, setNewTask] = useState('');
+	const [error, setError] = useState("");
 
-	// Firestore doc reference (change "myTasks" to something unique if needed)
-	const docRef = doc(db, "todoLists", "myTasks");
+	// We'll only create/use a docRef if user is logged in
+	const docRef = user ? doc(db, "todoLists", user.uid) : null;
 
-	// 1. Load tasks from Firestore on mount
+	// 1. Load user-specific tasks from Firestore on mount (or when `user` changes)
 	useEffect(() => {
+		// If still loading or user is not logged in, do nothing
+		if (loading || !user) return;
+
 		const fetchData = async () => {
 			try {
-				const docSnap = await getDoc(docRef);
+				const docSnap = await getDoc(docRef!); // docRef is never null if user is defined
 				if (docSnap.exists()) {
-					// Firestore doc has { tasks: string[] }
+					// If the doc exists, load tasks from Firestore
 					const data = docSnap.data();
 					if (data.tasks) {
 						setTasks(data.tasks);
 					}
 				} else {
-					// If no doc exists yet, create one with our default tasks
-					await setDoc(docRef, { tasks });
+					// If no doc exists for this user, create one with your default tasks
+					await setDoc(docRef!, { tasks });
 				}
 			} catch (error) {
 				console.error("Error loading tasks from Firestore:", error);
+				setError("Failed to load tasks");
 			}
 		};
 
 		fetchData();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	}, [user, loading]);
 
-	// 2. Whenever we update tasks in local state, also sync them to Firestore
-	const syncTasks = async (updatedTasks: string[]) => {
+	// Whenever we update tasks in local state, also sync them to Firestore
+	const syncTasksToFirestore = async (updatedTasks: string[]) => {
+		if (!docRef) return; // If user is null, skip
 		try {
 			await setDoc(docRef, { tasks: updatedTasks });
-		} catch (error) {
-			console.error("Error updating tasks in Firestore:", error);
+		} catch (err) {
+			console.error("Error updating tasks in Firestore:", err);
+			setError("Failed to update tasks");
 		}
 	};
 
-	// Original code: handle input
 	function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
-		setnewTask(event.target.value);
+		setNewTask(event.target.value);
 	}
 
-	// Original code: add a task
 	function addTask() {
 		if (newTask.trim() !== "") {
-			const updated = [...tasks, newTask];
-			setTasks(updated);
-			setnewTask('');
+			const updatedTasks = [...tasks, newTask];
+			setTasks(updatedTasks);
+			setNewTask('');
 			// Sync with Firestore
-			syncTasks(updated);
+			syncTasksToFirestore(updatedTasks);
 		}
 	}
 
-	// Original code: delete a task
 	function deleteTask(index: number) {
 		const updatedTasks = tasks.filter((_, i) => i !== index);
 		setTasks(updatedTasks);
-		syncTasks(updatedTasks);
+		syncTasksToFirestore(updatedTasks);
 	}
 
-	// Original code: move task up
 	function moveTaskUp(index: number) {
 		if (index > 0) {
 			const updatedTasks = [...tasks];
 			[updatedTasks[index], updatedTasks[index - 1]] = [updatedTasks[index - 1], updatedTasks[index]];
 			setTasks(updatedTasks);
-			syncTasks(updatedTasks);
+			syncTasksToFirestore(updatedTasks);
 		}
 	}
 
-	// Original code: move task down
 	function moveTaskDown(index: number) {
 		if (index < tasks.length - 1) {
 			const updatedTasks = [...tasks];
 			[updatedTasks[index], updatedTasks[index + 1]] = [updatedTasks[index + 1], updatedTasks[index]];
 			setTasks(updatedTasks);
-			syncTasks(updatedTasks);
+			syncTasksToFirestore(updatedTasks);
 		}
 	}
+
+	// If we're still loading auth or user is not logged in, show a fallback
+	if (loading) return <p>Loading user...</p>;
+	if (!user) return <p>Please log in to view your tasks.</p>;
 
 	return (
 		<div className='todo-list'>
 			<h1>Todo List</h1>
+			{error && <p style={{ color: 'red' }}>{error}</p>}
+
 			<div>
 				<input
 					type="text"
@@ -98,6 +107,7 @@ const TodoList = () => {
 				/>
 				<button className="add-button" onClick={addTask}>Add</button>
 			</div>
+
 			<ul className="list-group">
 				{tasks.map((task, index) => (
 					<li className='list-group-item' key={index}>
