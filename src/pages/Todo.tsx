@@ -1,6 +1,8 @@
 import { useAuth } from "../context/AuthContext";
 import { logOut } from "../../AuthService";
 import { useNavigate } from "react-router-dom";
+import TodoList from "../components/TodoList";
+import Todos from "../components/todos";
 
 const Todo = () => {
 	const { user } = useAuth();
@@ -19,13 +21,15 @@ const Todo = () => {
 			{/* Logout Button */}
 			<button
 				onClick={handleLogout}
-				className="mt-4 px-4 py-2 bg-red-500 text-white rounded"
+				className="mt-4 px-4 py-2 bg-red-500 rounded btn btn-outline-danger"
 			>
 				Logout
 			</button>
 
 			{/* To-Do items will go here later */}
 			<p>(To-Do items will go here)</p>
+			<TodoList />
+			{/* <Todos /> */}
 		</div>
 	);
 };
