@@ -11,7 +11,7 @@ const Login = () => {
 	// Redirect to `/todo` if the user is logged in
 	useEffect(() => {
 		if (user && !loading) {
-			console.log("✅ Redirecting to /todo...");
+			// console.log("✅ Redirecting to /todo...");
 			navigate("/todo", { replace: true }); // Avoids going back to login after redirection
 		}
 	}, [user, loading, navigate]);
@@ -31,7 +31,7 @@ const Login = () => {
 			) : (
 				<button
 					onClick={handleLogin}
-					className="px-4 py-2 bg-blue-500 text-white rounded"
+					className="mt-4 px-4 py-2 bg-red-500 rounded btn btn-outline-success"
 					disabled={isLoggingIn}
 				>
 					{isLoggingIn ? "Signing in..." : "Sign in with Google"}

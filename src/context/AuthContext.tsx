@@ -6,7 +6,7 @@ import {
 	ReactNode,
 } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import {auth} from '../FirebaseConfig'
+import { auth } from '../FirebaseConfig'
 
 // Define the AuthContext type
 type AuthContextType = {
@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 	useEffect(() => {
 		const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-			console.log("Auth State Changed: ", firebaseUser); // Debugging Log
+			// console.log("Auth State Changed: ", firebaseUser); // Debugging Log
 			setUser(firebaseUser);
 			setLoading(false);
 		});

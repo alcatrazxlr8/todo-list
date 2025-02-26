@@ -26,8 +26,7 @@ const Todo = () => {
 				Logout
 			</button>
 
-			{/* To-Do items will go here later */}
-			<p>(To-Do items will go here)</p>
+			{/* To-Do items will go here */}
 			<TodoList />
 			{/* <Todos /> */}
 		</div>

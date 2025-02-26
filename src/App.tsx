@@ -4,7 +4,7 @@ import Todo from "./pages/Todo";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
-	console.log("✅ App.tsx loaded");
+	// console.log("✅ App.tsx loaded");
 
 	return (
 		<Routes>
