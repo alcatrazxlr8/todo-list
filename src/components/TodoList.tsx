@@ -28,9 +28,9 @@ const TodoList = () => {
 
 	// 1. On mount (and whenever user changes), fetch tasks from sub-collection
 	useEffect(() => {
-		if (userLoading) return;            // Wait for auth to finish
+		if (userLoading) return;			// Wait for auth to finish
 		if (!user) {
-			setTasks([]);                    // If no user, reset tasks
+			setTasks([]);					// If no user, reset tasks
 			setLoading(false);
 			return;
 		}
@@ -119,7 +119,7 @@ const TodoList = () => {
 		if (!user) return;
 
 		// 6.1 - Reorder in local state
-		// - We'll update tasks array in memory
+		// - We update tasks array in memory
 		const updated = [...tasks];
 		// find the item with the oldIndex
 		const item = updated.find((t) => t.index === oldIndex);
@@ -139,7 +139,7 @@ const TodoList = () => {
 		setTasks(updated);
 
 		// 6.2 - Update Firestore
-		// We'll do a batch update of the two docs whose index changed
+		// We do a batch update of the two docs whose index changed
 		try {
 			const batch = writeBatch(db);
 
@@ -184,50 +184,64 @@ const TodoList = () => {
 	}
 
 	return (
-		<div className='todo-list'>
-			<h1>Todo List</h1>
-			<div>
-				<input
-					type="text"
-					placeholder='Enter Task Item'
-					value={newTask}
-					onChange={(e) => setNewTask(e.target.value)}
-				/>
-				<button className="add-button" onClick={addTask}>Add</button>
-			</div>
-			<ul className="list-group">
-				{tasks.map((task) => (
-					<li className='list-group-item' key={task.id}>
-						<span className='text'>{task.text}</span>
+		<div className="container mt-5">
+			<div className="card shadow">
+				<div className="card-header text-center">
+					<h1 className="card-title">Todo List</h1>
+				</div>
+				<div className="card-body">
+					<div className="input-group mb-3">
+						<input
+							type="text"
+							placeholder="Enter Task Item"
+							value={newTask}
+							onChange={(e) => setNewTask(e.target.value)}
+							className="form-control"
+						/>
+						<button
+							onClick={addTask}
+							className="btn btn-primary add-button"
+						>
+							Add
+						</button>
+					</div>
 
-						{/* 
-              Move Up/Down buttons rely on 'task.index'. 
-              For example, if task.index=0 => disable 'Up' 
-              If task.index=tasks.length-1 => disable 'Down' 
-            */}
-						<button
-							disabled={task.index === 0}
-							className="btn btn-info move-button"
-							onClick={() => moveTaskUp(task.index)}
-						>
-							Up
-						</button>
-						<button
-							disabled={task.index === tasks.length - 1}
-							className="btn btn-info move-button"
-							onClick={() => moveTaskDown(task.index)}
-						>
-							Down
-						</button>
-						<button
-							className="btn btn-warning delete-button"
-							onClick={() => deleteTask(task.id)}
-						>
-							Delete
-						</button>
-					</li>
-				))}
-			</ul>
+					<ul className="list-group">
+						{tasks.map((task, index) => (
+							<li className="list-group-item d-flex justify-content-between align-items-center" key={task.id}>
+								<span>{task.text}</span>
+								{/* 
+									Move Up/Down buttons rely on 'task.index'. 
+									For example, if task.index=0 => disable 'Up' 
+									If task.index=tasks.length-1 => disable 'Down' 
+								*/}
+								<div>
+									<button
+										disabled={index === 0}
+										onClick={() => moveTaskUp(task.index)}
+										className="btn btn-success btn-sm me-1 move-button"
+									>
+										Up
+									</button>
+									<button
+										disabled={index === tasks.length - 1}
+										onClick={() => moveTaskDown(task.index)}
+										className="btn btn-success btn-sm me-1"
+									>
+										Down
+									</button>
+									<button
+										onClick={() => deleteTask(task.id)}
+										className="btn btn-danger btn-sm delete-button"
+									>
+										Delete
+									</button>
+								</div>
+							</li>
+						))}
+					</ul>
+				</div>
+			</div>
 		</div>
 	);
 };
