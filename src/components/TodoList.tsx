@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
 	collection,
 	query,
@@ -7,11 +7,11 @@ import {
 	addDoc,
 	deleteDoc,
 	doc,
-	updateDoc,
+	// updateDoc,
 	writeBatch
 } from "firebase/firestore";
 import { db } from "../FirebaseConfig";
-import { useAuth } from "../context/AuthContext"; // If you're using an AuthContext
+import { useAuth } from "../context/AuthContext";
 
 type Task = {
 	id: string;
@@ -79,9 +79,6 @@ const TodoList = () => {
 				index: newIndex,
 			});
 
-			// Option A: Refetch tasks from Firestore
-			// Option B: Add to local state optimistically
-			// For demonstration, let's do a refetch so the order is guaranteed correct:
 			refetchTasks();
 
 			setNewTask("");
