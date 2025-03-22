@@ -15,7 +15,7 @@ const Todo = () => {
 
 	return (
 		<div className="flex flex-col items-center mt-10">
-			<h1 className="text-2xl font-bold mb-4">Your To-Do List</h1>
+			{/* <h1 className="text-2xl font-bold mb-4">Your To-Do List</h1> */}
 			{user && <p>Welcome, {user.displayName}!</p>}
 
 			{/* Logout Button */}
@@ -26,7 +26,7 @@ const Todo = () => {
 				Logout
 			</button>
 
-			{/* To-Do items will go here */}
+			{/* To-Do List component will go here */}
 			<TodoList />
 			{/* <Todos /> */}
 		</div>
