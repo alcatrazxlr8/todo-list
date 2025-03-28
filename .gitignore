@@ -9,6 +9,7 @@ lerna-debug.log*
 
 node_modules
 dist
+.netlify
 dist-ssr
 *.local
 

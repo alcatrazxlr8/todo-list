@@ -187,13 +187,13 @@ const TodoList = () => {
 		<div className="container mt-5">
 			<div className="card shadow">
 				<div className="card-header text-center">
-					<h1 className="card-title">Todo List</h1>
+					<h1 className="card-title">Tasks</h1>
 				</div>
 				<div className="card-body">
 					<div className="input-group mb-3">
 						<input
 							type="text"
-							placeholder="Enter Task Item"
+							placeholder="Enter Task"
 							value={newTask}
 							onChange={(e) => setNewTask(e.target.value)}
 							className="form-control"
@@ -201,6 +201,7 @@ const TodoList = () => {
 						<button
 							onClick={addTask}
 							className="btn btn-primary add-button"
+							style={{ maxWidth: "100px", width: "100%" }}
 						>
 							Add
 						</button>

@@ -14,21 +14,24 @@ const Todo = () => {
 	};
 
 	return (
-		<div className="flex flex-col items-center mt-10">
-			{/* <h1 className="text-2xl font-bold mb-4">Your To-Do List</h1> */}
-			{user && <p>Welcome, {user.displayName}!</p>}
+		<div className="container mt-5 d-flex flex-column align-items-center">
+			{/* Optional title */}
+			{/* <h1 className="h4 mb-4">Your To-Do List</h1> */}
 
-			{/* Logout Button */}
+			{/* Show welcome message if user is defined */}
+			{user && <h2 className="mb-2">Welcome, {user.displayName}!</h2>}
+
+			{/* Bootstrap logout button */}
 			<button
 				onClick={handleLogout}
-				className="mt-4 px-4 py-2 bg-red-500 rounded btn btn-outline-danger"
+				className="btn btn-outline-danger btn-lg mb-4"
+				style={{ maxWidth: "200px", width: "100%" }}
 			>
-				Logout
+				<b>Log Out</b>
 			</button>
 
-			{/* To-Do List component will go here */}
+			{/* To-Do List component */}
 			<TodoList />
-			{/* <Todos /> */}
 		</div>
 	);
 };

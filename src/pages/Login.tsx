@@ -23,20 +23,24 @@ const Login = () => {
 	};
 
 	return (
-		<div className="flex flex-col items-center mt-10">
-			<h1 className="text-2xl font-bold mb-4">Login Page</h1>
+		<div className="container d-flex align-items-center justify-content-center min-vh-100">
+			<div className="card shadow" style={{ maxWidth: "400px", width: "100%" }}>
+				<div className="card-body text-center">
+					<h1 className="card-title mb-4">To-Do Login</h1>
 
-			{user ? (
-				<p>Redirecting...</p> // Placeholder text while redirection happens
-			) : (
-				<button
-					onClick={handleLogin}
-					className="mt-4 px-4 py-2 bg-red-500 rounded btn btn-outline-success"
-					disabled={isLoggingIn}
-				>
-					{isLoggingIn ? "Signing in..." : "Sign in with Google"}
-				</button>
-			)}
+					{user ? (
+						<p>Redirecting...</p>
+					) : (
+						<button
+							onClick={handleLogin}
+							className="btn btn-success w-100"
+							disabled={isLoggingIn}
+						>
+							{isLoggingIn ? "Logging in..." : "Login with Google"}
+						</button>
+					)}
+				</div>
+			</div>
 		</div>
 	);
 };
