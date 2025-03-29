@@ -228,6 +228,12 @@ const TodoList = () => {
 							placeholder="Enter Task"
 							value={newTask}
 							onChange={(e) => setNewTask(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") {
+									e.preventDefault();
+									addTask();
+								}
+							}}
 							className="form-control"
 						/>
 						<button
