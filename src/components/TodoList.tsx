@@ -12,11 +12,64 @@ import {
 } from "firebase/firestore";
 import { db } from "../FirebaseConfig";
 import { useAuth } from "../context/AuthContext";
+import {
+	DndContext,
+	closestCenter,
+	KeyboardSensor,
+	PointerSensor,
+	useSensor,
+	useSensors,
+	DragEndEvent,
+} from '@dnd-kit/core';
+import {
+	arrayMove,
+	SortableContext,
+	sortableKeyboardCoordinates,
+	verticalListSortingStrategy,
+	useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 type Task = {
 	id: string;
 	text: string;
 	index: number;
+};
+
+const SortableItem = ({ id, children, onDelete }: { id: string; children: React.ReactNode; onDelete: (id: string) => void }) => {
+	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+		opacity: isDragging ? 0.5 : 1,
+		cursor: 'grab',
+		listStyle: 'none',
+	};
+
+	return (
+		<li
+			ref={setNodeRef}
+			style={style}
+			className="list-group-item d-flex justify-content-between align-items-center"
+		>
+			{/* Full-width draggable area */}
+			<div {...attributes} {...listeners} className="flex-grow-1 pe-3">
+				<span>{children}</span>
+			</div>
+
+			{/* Delete button */}
+			<button
+				onClick={(e) => {
+					e.stopPropagation();
+					onDelete(id);
+				}}
+				className="btn btn-danger btn-sm"
+			>
+				Delete
+			</button>
+		</li>
+	);
 };
 
 const TodoList = () => {
@@ -100,60 +153,39 @@ const TodoList = () => {
 		}
 	};
 
-	// 4. Move task up
-	const moveTaskUp = (index: number) => {
-		if (index === 0) return; // already at top
-		const newIndex = index - 1;
-		reorderTasks(index, newIndex);
-	};
+	// Replace moveTaskUp/moveTaskDown with drag handler
+	const handleDragEnd = async (event: DragEndEvent) => {
+		const { active, over } = event;
+		if (!over || active.id === over.id) return;
 
-	// 5. Move task down
-	const moveTaskDown = (index: number) => {
-		if (index === tasks.length - 1) return; // at bottom
-		const newIndex = index + 1;
-		reorderTasks(index, newIndex);
-	};
+		const oldIndex = tasks.findIndex(t => t.id === active.id);
+		const newIndex = tasks.findIndex(t => t.id === over.id);
 
-	// 6. Reorder tasks in local state and Firestore
-	const reorderTasks = async (oldIndex: number, newIndex: number) => {
-		if (!user) return;
+		// Update local state
+		const newTasks = arrayMove(tasks, oldIndex, newIndex);
+		setTasks(newTasks);
 
-		// 6.1 - Reorder in local state
-		// - We update tasks array in memory
-		const updated = [...tasks];
-		// find the item with the oldIndex
-		const item = updated.find((t) => t.index === oldIndex);
-		if (!item) return; // safety
-
-		// find the item that currently has newIndex
-		const swappedItem = updated.find((t) => t.index === newIndex);
-		if (!swappedItem) return;
-
-		// swap the index fields
-		const oldIndexVal = item.index;
-		item.index = swappedItem.index;
-		swappedItem.index = oldIndexVal;
-
-		// reorder the array by the index after swap
-		updated.sort((a, b) => a.index - b.index);
-		setTasks(updated);
-
-		// 6.2 - Update Firestore
-		// We do a batch update of the two docs whose index changed
+		// Update Firestore indices
 		try {
 			const batch = writeBatch(db);
-
-			const itemDocRef = doc(db, "users", user.uid, "tasks", item.id);
-			batch.update(itemDocRef, { index: item.index });
-
-			const swappedItemDocRef = doc(db, "users", user.uid, "tasks", swappedItem.id);
-			batch.update(swappedItemDocRef, { index: swappedItem.index });
-
+			newTasks.forEach((task, index) => {
+				if (task.index !== index) {
+					const taskRef = doc(db, "users", user!.uid, "tasks", task.id);
+					batch.update(taskRef, { index });
+				}
+			});
 			await batch.commit();
 		} catch (error) {
-			console.error("Error reordering tasks in Firestore:", error);
+			console.error("Error updating indices:", error);
 		}
 	};
+
+	const sensors = useSensors(
+		useSensor(PointerSensor),
+		useSensor(KeyboardSensor, {
+			coordinateGetter: sortableKeyboardCoordinates,
+		})
+	);
 
 	// Utility function to re-fetch tasks from Firestore
 	const refetchTasks = async () => {
@@ -207,40 +239,24 @@ const TodoList = () => {
 						</button>
 					</div>
 
-					<ul className="list-group">
-						{tasks.map((task, index) => (
-							<li className="list-group-item d-flex justify-content-between align-items-center" key={task.id}>
-								<span>{task.text}</span>
-								{/* 
-									Move Up/Down buttons rely on 'task.index'. 
-									For example, if task.index=0 => disable 'Up' 
-									If task.index=tasks.length-1 => disable 'Down' 
-								*/}
-								<div>
-									<button
-										disabled={index === 0}
-										onClick={() => moveTaskUp(task.index)}
-										className="btn btn-success btn-sm me-1 move-button"
-									>
-										Up
-									</button>
-									<button
-										disabled={index === tasks.length - 1}
-										onClick={() => moveTaskDown(task.index)}
-										className="btn btn-success btn-sm me-1"
-									>
-										Down
-									</button>
-									<button
-										onClick={() => deleteTask(task.id)}
-										className="btn btn-danger btn-sm delete-button"
-									>
-										Delete
-									</button>
-								</div>
-							</li>
-						))}
-					</ul>
+					<DndContext
+						sensors={sensors}
+						collisionDetection={closestCenter}
+						onDragEnd={handleDragEnd}
+					>
+						<SortableContext
+							items={tasks.map(t => t.id)}
+							strategy={verticalListSortingStrategy}
+						>
+							<ul className="list-group" style={{ paddingLeft: 0 }}>
+								{tasks.map((task) => (
+									<SortableItem key={task.id} id={task.id} onDelete={deleteTask}>
+										{task.text}
+									</SortableItem>
+								))}
+							</ul>
+						</SortableContext>
+					</DndContext>
 				</div>
 			</div>
 		</div>
