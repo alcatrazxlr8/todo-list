@@ -196,12 +196,6 @@ const TodoList = () => {
 		useSensor(TouchSensor, {
 			activationConstraint: {
 				delay: 100,
-				tolerance: 1,
-			},
-		}),
-		useSensor(PointerSensor, {
-			activationConstraint: {
-				delay: 100,
 				tolerance: 5,
 				distance: 2,
 			},
