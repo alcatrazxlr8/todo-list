@@ -3,6 +3,7 @@
 	border: 1px solid #dee2e6 !important;
 	margin-bottom: 2px;
 	background-color: #fff;
+	touch-action: none;
 }
 
 .list-group-item:hover {
@@ -15,4 +16,5 @@
 .drag-handle {
 	user-select: none;
 	font-size: 1.2em;
+	touch-action: none;
 }
