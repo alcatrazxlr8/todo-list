@@ -54,22 +54,17 @@ const SortableItem = ({ id, children, onDelete }: { id: string; children: React.
 		<li
 			ref={setNodeRef}
 			style={style}
+			{...attributes}
+			{...listeners}
 			className="list-group-item d-flex justify-content-between align-items-center"
 		>
-			{/* Drag handle with dots */}
-			<div
-				{...attributes}
-				{...listeners}
-				className="d-flex align-items-center gap-2"
-				style={{ cursor: 'grab' }}
-			>
+			<div className="d-flex align-items-center gap-2">
 				<div className="drag-handle pe-2" style={{ color: '#6c757d' }}>
 					⠿
 				</div>
 				<span>{children}</span>
 			</div>
 
-			{/* Delete button */}
 			<button
 				onClick={(e) => {
 					e.stopPropagation();
