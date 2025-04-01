@@ -30,6 +30,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+import './TodoList.css';
+
 type Task = {
 	id: string;
 	text: string;
@@ -53,8 +55,16 @@ const SortableItem = ({ id, children, onDelete }: { id: string; children: React.
 			style={style}
 			className="list-group-item d-flex justify-content-between align-items-center"
 		>
-			{/* Full-width draggable area */}
-			<div {...attributes} {...listeners} className="flex-grow-1 pe-3">
+			{/* Drag handle with dots */}
+			<div
+				{...attributes}
+				{...listeners}
+				className="d-flex align-items-center gap-2"
+				style={{ cursor: 'grab' }}
+			>
+				<div className="drag-handle pe-2" style={{ color: '#6c757d' }}>
+					⠿
+				</div>
 				<span>{children}</span>
 			</div>
 
