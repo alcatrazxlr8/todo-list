@@ -191,7 +191,12 @@ const TodoList = () => {
 	};
 
 	const sensors = useSensors(
-		useSensor(PointerSensor),
+		useSensor(PointerSensor, {
+			activationConstraint: {
+				delay: 250, // Add a small delay for touch devices
+				tolerance: 5, // Allow small movements before activating
+			},
+		}),
 		useSensor(KeyboardSensor, {
 			coordinateGetter: sortableKeyboardCoordinates,
 		})
