@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
 	collection,
 	query,
@@ -8,7 +8,7 @@ import {
 	deleteDoc,
 	doc,
 	// updateDoc,
-	writeBatch
+	writeBatch,
 } from "firebase/firestore";
 import { db } from "../FirebaseConfig";
 import { useAuth } from "../context/AuthContext";
@@ -21,17 +21,17 @@ import {
 	useSensor,
 	useSensors,
 	DragEndEvent,
-} from '@dnd-kit/core';
+} from "@dnd-kit/core";
 import {
 	arrayMove,
 	SortableContext,
 	sortableKeyboardCoordinates,
 	verticalListSortingStrategy,
 	useSortable,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
-import './TodoList.css';
+import "./TodoList.css";
 
 type Task = {
 	id: string;
@@ -39,15 +39,30 @@ type Task = {
 	index: number;
 };
 
-const SortableItem = ({ id, children, onDelete }: { id: string; children: React.ReactNode; onDelete: (id: string) => void }) => {
-	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+const SortableItem = ({
+	id,
+	children,
+	onDelete,
+}: {
+	id: string;
+	children: React.ReactNode;
+	onDelete: (id: string) => void;
+}) => {
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id });
 
 	const style = {
 		transform: CSS.Transform.toString(transform),
 		transition,
 		opacity: isDragging ? 0.5 : 1,
-		cursor: 'grab',
-		listStyle: 'none',
+		cursor: "grab",
+		listStyle: "none",
 	};
 
 	return (
@@ -59,7 +74,7 @@ const SortableItem = ({ id, children, onDelete }: { id: string; children: React.
 			className="list-group-item d-flex justify-content-between align-items-center"
 		>
 			<div className="d-flex align-items-center gap-2">
-				<div className="drag-handle pe-2" style={{ color: '#6c757d' }}>
+				<div className="drag-handle pe-2" style={{ color: "#6c757d" }}>
 					⠿
 				</div>
 				<span>{children}</span>
@@ -67,12 +82,12 @@ const SortableItem = ({ id, children, onDelete }: { id: string; children: React.
 
 			<button
 				onClick={(e) => {
-					e.stopPropagation();  // Impedisce la propagazione del click al drag
+					e.stopPropagation(); // Prevents click and drag propagation
 					onDelete(id);
 				}}
-				onPointerDown={e => e.preventDefault()}
+				onPointerDown={(e) => e.preventDefault()}
 				className="btn btn-danger btn-sm"
-				data-no-dnd="true" // Esclude il bottone dal comportamento di drag
+				data-no-dnd="true" // Excludes delete button from dragging behaviour
 			>
 				Delete
 			</button>
@@ -82,16 +97,16 @@ const SortableItem = ({ id, children, onDelete }: { id: string; children: React.
 
 const TodoList = () => {
 	const [tasks, setTasks] = useState<Task[]>([]);
-	const [newTask, setNewTask] = useState('');
+	const [newTask, setNewTask] = useState("");
 	const [loading, setLoading] = useState(true);
 	const { user, loading: userLoading } = useAuth();
 	// userLoading is the auth loading state; user is the logged-in user
 
 	// 1. On mount (and whenever user changes), fetch tasks from sub-collection
 	useEffect(() => {
-		if (userLoading) return;			// Wait for auth to finish
+		if (userLoading) return; // Wait for auth to finish
 		if (!user) {
-			setTasks([]);					// If no user, reset tasks
+			setTasks([]); // If no user, reset tasks
 			setLoading(false);
 			return;
 		}
@@ -100,7 +115,12 @@ const TodoList = () => {
 			setLoading(true);
 			try {
 				// Sub-collection path: /users/{uid}/tasks
-				const tasksCollection = collection(db, "users", user.uid, "tasks");
+				const tasksCollection = collection(
+					db,
+					"users",
+					user.uid,
+					"tasks"
+				);
 				const q = query(tasksCollection, orderBy("index", "asc"));
 				const querySnapshot = await getDocs(q);
 
@@ -166,8 +186,8 @@ const TodoList = () => {
 		const { active, over } = event;
 		if (!over || active.id === over.id) return;
 
-		const oldIndex = tasks.findIndex(t => t.id === active.id);
-		const newIndex = tasks.findIndex(t => t.id === over.id);
+		const oldIndex = tasks.findIndex((t) => t.id === active.id);
+		const newIndex = tasks.findIndex((t) => t.id === over.id);
 
 		// Update local state
 		const newTasks = arrayMove(tasks, oldIndex, newIndex);
@@ -178,7 +198,13 @@ const TodoList = () => {
 			const batch = writeBatch(db);
 			newTasks.forEach((task, index) => {
 				if (task.index !== index) {
-					const taskRef = doc(db, "users", user!.uid, "tasks", task.id);
+					const taskRef = doc(
+						db,
+						"users",
+						user!.uid,
+						"tasks",
+						task.id
+					);
 					batch.update(taskRef, { index });
 				}
 			});
@@ -266,12 +292,19 @@ const TodoList = () => {
 						onDragEnd={handleDragEnd}
 					>
 						<SortableContext
-							items={tasks.map(t => t.id)}
+							items={tasks.map((t) => t.id)}
 							strategy={verticalListSortingStrategy}
 						>
-							<ul className="list-group" style={{ paddingLeft: 0 }}>
+							<ul
+								className="list-group"
+								style={{ paddingLeft: 0 }}
+							>
 								{tasks.map((task) => (
-									<SortableItem key={task.id} id={task.id} onDelete={deleteTask}>
+									<SortableItem
+										key={task.id}
+										id={task.id}
+										onDelete={deleteTask}
+									>
 										{task.text}
 									</SortableItem>
 								))}
