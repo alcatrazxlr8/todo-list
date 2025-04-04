@@ -67,10 +67,12 @@ const SortableItem = ({ id, children, onDelete }: { id: string; children: React.
 
 			<button
 				onClick={(e) => {
-					e.stopPropagation();
+					e.stopPropagation();  // Impedisce la propagazione del click al drag
 					onDelete(id);
 				}}
+				onPointerDown={e => e.preventDefault()}
 				className="btn btn-danger btn-sm"
+				data-no-dnd="true" // Esclude il bottone dal comportamento di drag
 			>
 				Delete
 			</button>
